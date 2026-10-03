@@ -32,7 +32,7 @@ jobs:
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
             <remote name="mygithub" fetch="https://github.com/" />
-            <project name="caghandeniz/twrp_device_ant_B2_Ultra" path="device/ant/B2_Ultra" remote="mygithub" revision="main" />
+            <project name="caghandeniz/twrp_device_ant_B2_Ultra" path="device/ant/B2_Ultra" remote="mygithub" revision="master" />
           </manifest>
           EOL
 
