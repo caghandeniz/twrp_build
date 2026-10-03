@@ -28,13 +28,13 @@ jobs:
       - name: Add local manifest
         run: |
           mkdir -p ~/twrp/.repo/local_manifests
-          cat > ~/twrp/.repo/local_manifests/local_manifest.xml << 'EOF'
+          cat > ~/twrp/.repo/local_manifests/local_manifest.xml << 'EOL'
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <project name="caghandeniz/twrp_device_ant_B2_Ultra" path="device/ant/B2_Ultra" remote="github" revision="main" />
-            <remote name="github" fetch="https://github.com/" />
+            <remote name="mygithub" fetch="https://github.com/" />
+            <project name="caghandeniz/twrp_device_ant_B2_Ultra" path="device/ant/B2_Ultra" remote="mygithub" revision="main" />
           </manifest>
-          EOF
+          EOL
 
       - name: Repo sync
         run: |
