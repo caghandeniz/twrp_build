@@ -69,8 +69,8 @@ jobs:
           cd ~/twrp
           source build/envsetup.sh
           lunch twrp_B2_Ultra-eng
-          mka bootimage
-
+          mka vendorbootimage
+          
       - name: Upload artifact
         if: success()
         uses: actions/upload-artifact@v4
