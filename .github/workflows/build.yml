@@ -6,14 +6,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [no_crypto, no_display, no_version, minimal]
     steps:
       - name: Free up disk space
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           sudo apt-get clean
-          df -h
-          nproc --all
-          free -h
 
       - name: Install dependencies
         run: |
@@ -42,27 +43,25 @@ jobs:
           </manifest>
           EOL
 
-      - name: Repo sync (with live progress monitor)
+      - name: Repo sync
         timeout-minutes: 60
         run: |
           cd ~/twrp
-          (
-            START=$(date +%s)
-            while true; do
-              sleep 30
-              NOW=$(date +%s)
-              ELAPSED=$(( (NOW - START) / 60 ))
-              SIZE=$(du -sh ~/twrp 2>/dev/null | cut -f1)
-              echo ">>> [$ELAPSED dk geçti] Şu ana kadar indirilen: $SIZE"
-            done
-          ) &
-          MONITOR_PID=$!
+          repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --fail-fast
 
-          repo sync -c -j$(nproc --all) --force-sync -v --no-tags --no-clone-bundle --fail-fast
-          SYNC_EXIT=$?
-
-          kill $MONITOR_PID 2>/dev/null || true
-          exit $SYNC_EXIT
+      - name: Apply variant
+        run: |
+          cd ~/twrp/device/ant/B2_Ultra
+          strip_crypto()  { sed -i '/^TW_INCLUDE_CRYPTO/d;/^TW_INCLUDE_FDBE/d;/^BOARD_USES_METADATA_PARTITION/d' BoardConfig.mk; }
+          strip_display() { sed -i '/^RECOVERY_GRAPHICS_FORCE_USE_LINELENGTH/d;/^TW_BRIGHTNESS_PATH/d' BoardConfig.mk; }
+          strip_version() { sed -i 's/^PLATFORM_VERSION := .*/PLATFORM_VERSION := 16.1.0/' BoardConfig.mk; }
+          case "${{ matrix.variant }}" in
+            no_crypto)  strip_crypto ;;
+            no_display) strip_display ;;
+            no_version) strip_version ;;
+            minimal)    strip_crypto; strip_display; strip_version ;;
+          esac
+          grep -nE "TW_INCLUDE|LINELENGTH|BRIGHTNESS|PLATFORM_VERSION|METADATA|PIXEL" BoardConfig.mk
 
       - name: Build TWRP
         run: |
@@ -70,19 +69,10 @@ jobs:
           source build/envsetup.sh
           lunch twrp_B2_Ultra-eng
           mka vendorbootimage
-          
+
       - name: Upload artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: twrp-B2_Ultra
+          name: twrp-${{ matrix.variant }}
           path: ~/twrp/out/target/product/B2_Ultra/*.img
-
-      - name: Upload logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: failure-logs
-          path: |
-            ~/twrp/.repo/manifest.xml
-            ~/twrp/.repo/local_manifests/
